@@ -114,11 +114,3 @@ Three tables in PostgreSQL:
 - **features** — Engineered features + labels per ticker/timestamp
 - **predictions** — Model predictions with actual outcomes (filled retroactively)
 
-## Build Phases
-
-- [x] **Phase 1** — Data pipeline (PostgreSQL, ingestion poller, feature engineering)
-- [ ] **Phase 2** — Offline training (historical data, RandomForest, XGBoost, MLflow)
-- [ ] **Phase 3** — Inference API (FastAPI /predict endpoint)
-- [ ] **Phase 4** — Dashboard (Streamlit with live, performance, models pages)
-- [ ] **Phase 5** — Drift monitoring (Evidently AI)
-- [ ] **Phase 6** — Full Dockerization & polish
