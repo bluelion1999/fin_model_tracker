@@ -198,11 +198,57 @@ def log_to_mlflow(results: dict):
     logger.info("Drift results logged to MLflow")
 
 
+ALERTS_FILE = os.path.join(os.path.dirname(__file__), "..", "monitoring_alerts.json")
+
+
+def check_and_alert(results: dict):
+    """Check for red-status tickers and write alerts to a JSON file."""
+    alerts = []
+    for ticker, data in results.items():
+        if data["overall_status"] == "red":
+            drifted = [f for f, r in data["features"].items() if r["status"] == "red"]
+            alerts.append({
+                "ticker": ticker,
+                "status": "red",
+                "drifted_features": drifted,
+                "timestamp": data["timestamp"],
+                "message": (
+                    f"DRIFT ALERT: {ticker} has {len(drifted)} features with significant drift. "
+                    f"Consider retraining the model."
+                ),
+            })
+            logger.warning(
+                "DRIFT ALERT: %s — %d features in red: %s",
+                ticker, len(drifted), ", ".join(drifted),
+            )
+
+    if alerts:
+        # Append to alerts file
+        existing = []
+        if os.path.exists(ALERTS_FILE):
+            with open(ALERTS_FILE) as f:
+                try:
+                    existing = json.load(f)
+                except json.JSONDecodeError:
+                    existing = []
+
+        existing.extend(alerts)
+        # Keep only last 100 alerts
+        existing = existing[-100:]
+        with open(ALERTS_FILE, "w") as f:
+            json.dump(existing, f, indent=2)
+
+        logger.info("Wrote %d alert(s) to %s", len(alerts), ALERTS_FILE)
+    else:
+        logger.info("No drift alerts — all tickers green or yellow.")
+
+
 def main():
-    """Run drift check and log results."""
+    """Run drift check, log results, and check alerts."""
     results = run_drift_check()
     if results:
         log_to_mlflow(results)
+        check_and_alert(results)
     else:
         logger.warning("No drift results to log.")
 

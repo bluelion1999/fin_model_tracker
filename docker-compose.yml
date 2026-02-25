@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
@@ -29,6 +27,51 @@ services:
       --port 5000
       --backend-store-uri sqlite:///mlflow/mlflow.db
       --default-artifact-root /mlflow/artifacts
+
+  poller:
+    build: .
+    container_name: finance_poller
+    env_file: .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: python ingestion/poller.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: finance_api
+    env_file: .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    ports:
+      - "8000:8000"
+    command: python -m uvicorn serving.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+
+  dashboard:
+    build: .
+    container_name: finance_dashboard
+    env_file: .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    ports:
+      - "8501:8501"
+    command: streamlit run dashboard/app.py --server.headless true --server.port 8501 --server.address 0.0.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
 
 volumes:
   pgdata:

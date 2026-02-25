@@ -124,5 +124,28 @@ try:
 except Exception as e:
     st.warning(f"Could not fetch experiments: {e}")
 
+# Retrain trigger
+st.subheader("Retrain Model")
+st.caption("Retrain on the last 2 years of hourly data and register the best model.")
+
+if st.button("Retrain Now", type="primary"):
+    with st.spinner("Training in progress — this may take a minute..."):
+        import subprocess
+        result = subprocess.run(
+            ["python", "training/train.py"],
+            capture_output=True, text=True, timeout=300,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+    if result.returncode == 0:
+        st.success("Retraining complete! New model version registered.")
+        # Show key output lines
+        for line in result.stdout.splitlines():
+            if any(k in line for k in ["AUC", "wins", "Registered", "aliased", "Training complete"]):
+                st.text(line.strip())
+        st.rerun()
+    else:
+        st.error("Retraining failed.")
+        st.code(result.stderr[-2000:] if len(result.stderr) > 2000 else result.stderr)
+
 # Link to MLflow UI
 st.markdown(f"[Open MLflow UI]({MLFLOW_TRACKING_URI})")

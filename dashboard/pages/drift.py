@@ -9,9 +9,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from monitoring.drift import run_drift_check, FEATURE_COLS
+import json
+from monitoring.drift import run_drift_check, FEATURE_COLS, ALERTS_FILE
 
 st.title("Drift Monitoring")
+
+# Show recent alerts
+if os.path.exists(ALERTS_FILE):
+    with open(ALERTS_FILE) as f:
+        try:
+            alerts = json.load(f)
+        except json.JSONDecodeError:
+            alerts = []
+    if alerts:
+        recent = alerts[-5:]  # last 5 alerts
+        for alert in reversed(recent):
+            st.error(alert["message"])
+        with st.expander(f"View all alerts ({len(alerts)} total)"):
+            st.json(alerts[-20:])
 
 st.caption(
     "Compares the distribution of recent features against a reference window. "

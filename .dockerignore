@@ -1,12 +1,10 @@
-__pycache__/
+.git
+__pycache__
 *.pyc
 .env
 venv/
 .venv/
 mlruns/
 mlartifacts/
-*.egg-info/
-dist/
-build/
 .ipynb_checkpoints/
-monitoring_alerts.json
+notebooks/
